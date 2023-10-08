@@ -51,10 +51,52 @@ exports.createArtikel = async (req, res) => {
   }
 };
 
+// exports.getAllArtikel = async (req, res) => {
+//   try {
+//     const artikels = await Artikel.findAll();
+//     return res.status(200).json(artikels);
+//   } catch (error) {
+//     return res.status(500).json({ error: error.message });
+//   }
+// };
+
+let totalArtikels;
+
 exports.getAllArtikel = async (req, res) => {
   try {
-    const artikels = await Artikel.findAll();
-    return res.status(200).json(artikels);
+    const page = req.query.page || 1;
+    const perPage = 10;
+    const startIndex = (page - 1) * perPage;
+
+    let whereCondition = {};
+    const id_kategori = req.query.id_kategori;
+
+    if (id_kategori) {
+      whereCondition.id_kategori = id_kategori;
+    }
+
+    if (!totalArtikels) {
+      totalArtikels = await Artikel.count({
+        where: whereCondition,
+      });
+    }
+
+    const artikels = await Artikel.findAll({
+      where: whereCondition,
+      order: [["id", "ASC"]],
+      offset: startIndex,
+      limit: perPage,
+    });
+
+    const response = {
+      artikels,
+      pageInfo: {
+        currentPage: page,
+        totalPages: Math.ceil(totalArtikels / perPage),
+      },
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
